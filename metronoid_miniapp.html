@@ -3,102 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Metronoid - Metro Runner</title>
+    <title>Metronoid</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: #0a0e14;
+            background: #000;
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             overflow: hidden;
-            touch-action: none;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
         }
         #splash, #startScreen {
             position: fixed;
             inset: 0;
-            background: #000;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 100;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.4s ease;
         }
-        #splash.hidden, #startScreen.hidden {
-            opacity: 0;
-            pointer-events: none;
+        #splash { background: #000; }
+        #startScreen { 
+            background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+            display: none;
         }
-        #splash h1 {
-            font-size: 48px;
-            letter-spacing: 4px;
+        .delta-logo {
+            font-size: 90px;
             color: #00ff88;
-            font-weight: 300;
-            text-shadow: 0 0 12px #00ff88;
-            animation: flicker 2.5s ease-in-out infinite;
+            text-shadow: 
+                0 0 10px #00ff88,
+                0 0 20px #00ff88,
+                0 0 40px #00ff88;
+            line-height: 1;
+            animation: glow 2.2s ease-in-out infinite alternate;
         }
-        #splash h1 span {
-            font-size: 24px;
+        .delta-text {
+            margin-top: 18px;
+            font-size: 18px;
             letter-spacing: 6px;
+            color: #00ff88;
+            text-shadow: 0 0 8px #00ff88;
+            font-weight: 300;
+            animation: glow 2.2s ease-in-out infinite alternate;
         }
-        @keyframes flicker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        @keyframes glow {
+            from { opacity: 0.85; filter: brightness(1); }
+            to   { opacity: 1; filter: brightness(1.15); }
         }
-        #splash p, #startScreen p {
-            margin-top: 40px;
-            font-size: 13px;
-            color: #555;
+        #splash .hint {
+            margin-top: 60px;
+            font-size: 12px;
+            color: #444;
             letter-spacing: 3px;
         }
-        #startScreen {
-            background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
-        }
         #startScreen h1 {
-            font-size: 36px;
-            letter-spacing: 4px;
-            color: #fff;
-            text-shadow: 0 0 20px rgba(0,255,136,0.5);
-            margin-bottom: 10px;
+            font-size: 40px;
+            letter-spacing: 3px;
+            margin-bottom: 8px;
         }
-        #startScreen .subtitle {
-            font-size: 14px;
+        #startScreen .sub {
             color: #888;
-            letter-spacing: 2px;
+            font-size: 15px;
+            margin-bottom: 30px;
+            letter-spacing: 1px;
+        }
+        #startScreen .desc {
+            color: #aaa;
+            font-size: 15px;
+            text-align: center;
+            max-width: 260px;
+            line-height: 1.5;
             margin-bottom: 40px;
         }
         #startBtn {
-            padding: 14px 40px;
+            padding: 14px 50px;
             font-size: 18px;
             background: #00ff88;
             color: #000;
             border: none;
             border-radius: 30px;
             font-weight: bold;
-            letter-spacing: 1px;
             cursor: pointer;
-            box-shadow: 0 0 20px rgba(0,255,136,0.4);
         }
         #gameCanvas {
             display: block;
-            background: linear-gradient(180deg, #1a2332 0%, #0d1520 100%);
-            border-radius: 12px;
-            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+            margin: 0 auto;
+            background: #1a2332;
             max-width: 100%;
             max-height: 100%;
         }
         #ui {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            font-size: 22px;
+            top: 15px;
+            left: 15px;
+            font-size: 20px;
             font-weight: bold;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
             z-index: 10;
         }
         #gameOver {
@@ -108,16 +109,15 @@
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
-            background: rgba(0,0,0,0.75);
-            padding: 30px 40px;
-            border-radius: 16px;
+            background: rgba(0,0,0,0.8);
+            padding: 25px 35px;
+            border-radius: 12px;
             z-index: 20;
         }
-        #gameOver h2 { color: #ff4444; margin-bottom: 15px; font-size: 28px; }
+        #gameOver h2 { color: #ff4444; margin-bottom: 10px; }
         #restartBtn {
-            margin-top: 15px;
-            padding: 12px 30px;
-            font-size: 18px;
+            margin-top: 12px;
+            padding: 10px 25px;
             background: #2481cc;
             color: white;
             border: none;
@@ -126,41 +126,37 @@
         }
         .controls {
             position: absolute;
-            bottom: 30px;
+            bottom: 20px;
             width: 100%;
             display: flex;
             justify-content: space-between;
-            padding: 0 40px;
+            padding: 0 30px;
             pointer-events: none;
         }
         .controls div {
             pointer-events: auto;
-            width: 80px;
-            height: 80px;
-            background: rgba(255,255,255,0.15);
+            width: 70px;
+            height: 70px;
+            background: rgba(255,255,255,0.12);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            user-select: none;
+            font-size: 28px;
         }
     </style>
 </head>
 <body>
-    <!-- Заставка лаборатории -->
     <div id="splash">
-        <h1>Δ // <span>DELTA</span> //</h1>
-        <p>TAP TO CONTINUE</p>
+        <div class="delta-logo">Δ</div>
+        <div class="delta-text">DELTA</div>
+        <div class="hint">TAP TO CONTINUE</div>
     </div>
 
-    <!-- Стартовая страница -->
-    <div id="startScreen" class="hidden">
+    <div id="startScreen">
         <h1>Metronoid</h1>
-        <div class="subtitle">Metro Runner</div>
-        <p style="margin-bottom: 30px; color: #aaa; font-size: 15px; text-align: center; max-width: 280px; line-height: 1.4;">
-            Пройди переход метро,<br>не врезавшись в людей
-        </p>
+        <div class="sub">Metro Runner</div>
+        <div class="desc">Пройди переход метро,<br>не врезавшись в людей</div>
         <button id="startBtn">НАЧАТЬ</button>
     </div>
 
@@ -178,11 +174,7 @@
 
     <script>
         const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.ready();
-            tg.expand();
-            document.body.style.background = tg.themeParams.bg_color || '#0a0e14';
-        }
+        if (tg) { tg.ready(); tg.expand(); }
 
         const splash = document.getElementById('splash');
         const startScreen = document.getElementById('startScreen');
@@ -193,19 +185,12 @@
         const gameOverEl = document.getElementById('gameOver');
         const restartBtn = document.getElementById('restartBtn');
 
-        const COLS = 7;
-        const ROWS = 14;
-        let cellSize = 50;
-        let playerCol = 3;
+        const COLS = 7, ROWS = 14;
+        let cellSize = 50, playerCol = 3;
         const playerRow = ROWS - 1;
-        let enemies = [];
-        let tiles = [];
-        let score = 0;
-        let isRunning = false;
-        let frame = 0;
-        const spawnEvery = 40;
-        const speed = 0.08;
-        const floorSpeed = 1.4;
+        let enemies = [], tiles = [], score = 0;
+        let isRunning = false, frame = 0;
+        const spawnEvery = 40, speed = 0.08, floorSpeed = 1.4;
         let nextRowIndex = -10;
 
         function initTiles() {
@@ -222,7 +207,6 @@
                     });
                 }
             }
-            nextRowIndex = -20;
         }
 
         function resize() {
@@ -237,30 +221,21 @@
         window.addEventListener('resize', resize);
 
         function spawnEnemy() {
-            const col = Math.floor(Math.random() * COLS);
             enemies.push({
-                col: col,
+                col: Math.floor(Math.random() * COLS),
                 row: 0,
-                speed: Math.random() < 0.25 ? speed * 1.6 : speed,
-                color: `hsl(${Math.random() * 60 + 200}, 50%, 55%)`
+                speed: Math.random() < 0.25 ? speed * 1.6 : speed
             });
         }
 
         function update() {
             if (!isRunning) return;
-
             frame++;
-
-            for (let t of tiles) {
-                t.row += floorSpeed / cellSize;
-            }
-
+            for (let t of tiles) t.row += floorSpeed / cellSize;
             tiles = tiles.filter(t => t.row < ROWS + 6);
 
             let minRow = Infinity;
-            for (let t of tiles) {
-                if (t.row < minRow) minRow = t.row;
-            }
+            for (let t of tiles) if (t.row < minRow) minRow = t.row;
 
             const tileScale = 4;
             while (minRow > -4) {
@@ -277,17 +252,9 @@
             }
 
             if (frame % spawnEvery === 0) spawnEnemy();
-
-            for (let e of enemies) {
-                e.row += e.speed;
-            }
-
+            for (let e of enemies) e.row += e.speed;
             enemies = enemies.filter(e => {
-                if (e.row > ROWS) {
-                    score++;
-                    scoreEl.textContent = score;
-                    return false;
-                }
+                if (e.row > ROWS) { score++; scoreEl.textContent = score; return false; }
                 return true;
             });
 
@@ -303,16 +270,12 @@
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             const tileScale = 4;
             const smallTile = cellSize / tileScale;
             for (let t of tiles) {
-                const x = t.col * cellSize;
-                const y = t.row * cellSize;
                 ctx.fillStyle = t.dark ? '#f5e6d3' : '#ffffff';
-                ctx.fillRect(x, y, smallTile - 0.5, smallTile - 0.5);
+                ctx.fillRect(t.col * cellSize, t.row * cellSize, smallTile - 0.5, smallTile - 0.5);
             }
-
             const px = playerCol * cellSize + cellSize / 2;
             const py = playerRow * cellSize + cellSize / 2;
             const playerScale = 1 + Math.sin(Date.now() / 150) * 0.06;
@@ -321,15 +284,11 @@
             ctx.textBaseline = 'middle';
             ctx.fillText('🚶', px, py);
 
-            const people = ['🧑', '👨', '👩', '🧑‍🦱', '👨‍🦰', '👩‍🦰', '🧑‍🦳', '👴', '👵'];
+            const people = ['🧑','👨','👩','🧑‍🦱','👨‍🦰','👩‍🦰','🧑‍🦳','👴','👵'];
             for (let e of enemies) {
-                const ex = e.col * cellSize + cellSize / 2;
-                const ey = e.row * cellSize + cellSize / 2;
-
                 const stepScale = 1 + Math.sin((Date.now() / 180) + e.col * 2) * 0.08;
-                const emoji = people[e.col % people.length];
                 ctx.font = `${cellSize * 0.65 * stepScale}px Arial`;
-                ctx.fillText(emoji, ex, ey);
+                ctx.fillText(people[e.col % people.length], e.col * cellSize + cellSize / 2, e.row * cellSize + cellSize / 2);
             }
         }
 
@@ -339,32 +298,17 @@
             requestAnimationFrame(loop);
         }
 
-        function moveLeft() {
-            if (isRunning && playerCol > 0) {
-                playerCol--;
-                if (tg) tg.HapticFeedback.impactOccurred('light');
-            }
-        }
-        function moveRight() {
-            if (isRunning && playerCol < COLS - 1) {
-                playerCol++;
-                if (tg) tg.HapticFeedback.impactOccurred('light');
-            }
-        }
+        function moveLeft() { if (isRunning && playerCol > 0) { playerCol--; if (tg) tg.HapticFeedback.impactOccurred('light'); } }
+        function moveRight() { if (isRunning && playerCol < COLS - 1) { playerCol++; if (tg) tg.HapticFeedback.impactOccurred('light'); } }
 
         document.getElementById('btnLeft').addEventListener('click', moveLeft);
         document.getElementById('btnRight').addEventListener('click', moveRight);
 
         let touchStartX = 0;
-        canvas.addEventListener('touchstart', e => {
-            touchStartX = e.touches[0].clientX;
-        }, { passive: true });
+        canvas.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
         canvas.addEventListener('touchend', e => {
             const dx = e.changedTouches[0].clientX - touchStartX;
-            if (Math.abs(dx) > 40) {
-                if (dx > 0) moveRight();
-                else moveLeft();
-            }
+            if (Math.abs(dx) > 40) dx > 0 ? moveRight() : moveLeft();
         });
 
         window.addEventListener('keydown', e => {
@@ -374,36 +318,27 @@
         });
 
         function restart() {
-            enemies = [];
-            score = 0;
-            scoreEl.textContent = '0';
-            playerCol = Math.floor(COLS / 2);
-            isRunning = true;
-            frame = 0;
-            initTiles();
-            gameOverEl.style.display = 'none';
+            enemies = []; score = 0; scoreEl.textContent = '0';
+            playerCol = Math.floor(COLS / 2); isRunning = true; frame = 0;
+            initTiles(); gameOverEl.style.display = 'none';
         }
 
-        function showStartScreen() {
-            splash.classList.add('hidden');
+        splash.addEventListener('click', () => {
+            splash.style.opacity = '0';
             setTimeout(() => {
                 splash.style.display = 'none';
-                startScreen.classList.remove('hidden');
-            }, 500);
-        }
+                startScreen.style.display = 'flex';
+            }, 400);
+        });
 
-        function startGame() {
-            startScreen.classList.add('hidden');
+        startBtn.addEventListener('click', () => {
+            startScreen.style.opacity = '0';
             setTimeout(() => {
                 startScreen.style.display = 'none';
                 isRunning = true;
                 if (tg) tg.HapticFeedback.impactOccurred('medium');
-            }, 500);
-        }
-
-        splash.addEventListener('click', showStartScreen);
-        splash.addEventListener('touchstart', showStartScreen);
-        startBtn.addEventListener('click', startGame);
+            }, 400);
+        });
 
         restartBtn.addEventListener('click', restart);
         gameOverEl.addEventListener('click', restart);
