@@ -34,24 +34,23 @@
             opacity: 0;
             pointer-events: none;
         }
-        #splash img {
-            width: 180px;
-            height: auto;
-            filter: drop-shadow(0 0 20px #00ff88);
-            margin-bottom: 20px;
-        }
         #splash h1 {
-            font-size: 26px;
-            letter-spacing: 6px;
+            font-size: 42px;
+            letter-spacing: 8px;
             color: #00ff88;
-            text-shadow: 0 0 15px #00ff88;
             font-weight: 300;
+            text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88;
+            animation: flicker 2.5s ease-in-out infinite;
+        }
+        @keyframes flicker {
+            0%, 100% { opacity: 1; text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88; }
+            50%      { opacity: 0.75; text-shadow: 0 0 6px #00ff88, 0 0 12px #00ff88; }
         }
         #splash p {
-            margin-top: 30px;
-            font-size: 14px;
-            color: #666;
-            letter-spacing: 2px;
+            margin-top: 50px;
+            font-size: 13px;
+            color: #555;
+            letter-spacing: 4px;
         }
         #gameCanvas {
             display: block;
@@ -117,10 +116,9 @@
     </style>
 </head>
 <body>
-    <!-- Заставка лаборатории -->
+    <!-- Заставка -->
     <div id="splash">
-        <img src="delta.png" alt="Delta Lab">
-        <h1>Δ DELTA LAB</h1>
+        <h1>Δ DELTA</h1>
         <p>TAP TO START</p>
     </div>
 
