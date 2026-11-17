@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Metronoid - Metro Runner</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0e14;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(180deg, #1a2332 0%, #0d1520 100%);
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+            max-width: 100%;
+            max-height: 100%;
+        }
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 22px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        #gameOver {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            background: rgba(0,0,0,0.75);
+            padding: 30px 40px;
+            border-radius: 16px;
+            z-index: 20;
+        }
+        #gameOver h2 { color: #ff4444; margin-bottom: 15px; font-size: 28px; }
+        #restartBtn {
+            margin-top: 15px;
+            padding: 12px 30px;
+            font-size: 18px;
+            background: #2481cc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 40px;
+            pointer-events: none;
+        }
+        .controls div {
+            pointer-events: auto;
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">Score: <span id="score">0</span></div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="gameOver">
+        <h2>GAME OVER</h2>
+        <p>Нажми чтобы начать заново</p>
+        <button id="restartBtn">Restart</button>
+    </div>
+    <div class="controls">
+        <div id="btnLeft">◀</div>
+        <div id="btnRight">▶</div>
+    </div>
+
+    <script>
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            document.body.style.background = tg.themeParams.bg_color || '#0a0e14';
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const gameOverEl = document.getElementById('gameOver');
+        const restartBtn = document.getElementById('restartBtn');
+
+        const COLS = 7;
+        const ROWS = 14;
+        let cellSize = 50;
+        let playerCol = 3;
+        const playerRow = ROWS - 1;
+        let enemies = [];
+        let tiles = [];
+        let score = 0;
+        let isRunning = true;
+        let frame = 0;
+        const spawnEvery = 40;
+        const speed = 0.08;
+        const floorSpeed = 1.4;
+        let nextRowIndex = -10;
+
+        function initTiles() {
+            tiles = [];
+            nextRowIndex = -20;
+            const tileScale = 4; // плитки в 4 раза меньше
+            for (let i = 0; i < (ROWS + 8) * tileScale; i++) {
+                const rowIndex = nextRowIndex + i;
+                for (let c = 0; c < COLS * tileScale; c++) {
+                    tiles.push({
+                        col: c / tileScale,
+                        row: rowIndex / tileScale,
+                        dark: ((c + rowIndex) % 2) === 0
+                    });
+                }
+            }
+            nextRowIndex = -20;
+        }
+
+        function resize() {
+            const maxW = Math.min(window.innerWidth - 20, 420);
+            const maxH = Math.min(window.innerHeight - 40, 700);
+            cellSize = Math.floor(Math.min(maxW / COLS, maxH / ROWS));
+            canvas.width = COLS * cellSize;
+            canvas.height = ROWS * cellSize;
+            initTiles();
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        function spawnEnemy() {
+            const col = Math.floor(Math.random() * COLS);
+            enemies.push({
+                col: col,
+                row: 0,
+                speed: Math.random() < 0.25 ? speed * 1.6 : speed,
+                color: `hsl(${Math.random() * 60 + 200}, 50%, 55%)`
+            });
+        }
+
+        function update() {
+            if (!isRunning) return;
+
+            frame++;
+
+            // Двигаем плитки
+            for (let t of tiles) {
+                t.row += floorSpeed / cellSize;
+            }
+
+            // Удаляем плитки, которые ушли вниз
+            tiles = tiles.filter(t => t.row < ROWS + 6);
+
+            // Находим самый верхний ряд
+            let minRow = Infinity;
+            for (let t of tiles) {
+                if (t.row < minRow) minRow = t.row;
+            }
+
+            // Добавляем новые ряды сверху
+            const tileScale = 4;
+            while (minRow > -4) {
+                nextRowIndex--;
+                const newRow = minRow - (1 / tileScale);
+                for (let c = 0; c < COLS * tileScale; c++) {
+                    tiles.push({
+                        col: c / tileScale,
+                        row: newRow,
+                        dark: ((c + nextRowIndex) % 2) === 0
+                    });
+                }
+                minRow = newRow;
+            }
+
+            if (frame % spawnEvery === 0) spawnEnemy();
+
+            for (let e of enemies) {
+                e.row += e.speed;
+            }
+
+            enemies = enemies.filter(e => {
+                if (e.row > ROWS) {
+                    score++;
+                    scoreEl.textContent = score;
+                    return false;
+                }
+                return true;
+            });
+
+            for (let e of enemies) {
+                if (Math.abs(e.col - playerCol) < 0.1 && Math.abs(e.row - playerRow) < 0.9) {
+                    isRunning = false;
+                    gameOverEl.style.display = 'block';
+                    if (tg) tg.HapticFeedback.notificationOccurred('error');
+                    return;
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Рисуем мелкие плитки
+            const tileScale = 4;
+            const smallTile = cellSize / tileScale;
+            for (let t of tiles) {
+                const x = t.col * cellSize;
+                const y = t.row * cellSize;
+                ctx.fillStyle = t.dark ? '#f5e6d3' : '#ffffff'; // бежевый и белый
+                ctx.fillRect(x, y, smallTile - 0.5, smallTile - 0.5);
+            }
+
+            // Игрок
+            const px = playerCol * cellSize + cellSize / 2;
+            const py = playerRow * cellSize + cellSize / 2;
+            const playerScale = 1 + Math.sin(Date.now() / 150) * 0.06;
+            ctx.font = `${cellSize * 0.7 * playerScale}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🚶', px, py);
+
+            // Люди с анимацией шагов
+            const people = ['🧑', '👨', '👩', '🧑‍🦱', '👨‍🦰', '👩‍🦰', '🧑‍🦳', '👴', '👵'];
+            for (let e of enemies) {
+                const ex = e.col * cellSize + cellSize / 2;
+                const ey = e.row * cellSize + cellSize / 2;
+
+                const stepScale = 1 + Math.sin((Date.now() / 180) + e.col * 2) * 0.08;
+                const emoji = people[e.col % people.length];
+                ctx.font = `${cellSize * 0.65 * stepScale}px Arial`;
+                ctx.fillText(emoji, ex, ey);
+            }
+        }
+
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        function moveLeft() {
+            if (isRunning && playerCol > 0) {
+                playerCol--;
+                if (tg) tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+        function moveRight() {
+            if (isRunning && playerCol < COLS - 1) {
+                playerCol++;
+                if (tg) tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        document.getElementById('btnLeft').addEventListener('click', moveLeft);
+        document.getElementById('btnRight').addEventListener('click', moveRight);
+
+        let touchStartX = 0;
+        canvas.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+        canvas.addEventListener('touchend', e => {
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            if (Math.abs(dx) > 40) {
+                if (dx > 0) moveRight();
+                else moveLeft();
+            }
+        });
+
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') moveLeft();
+            if (e.key === 'ArrowRight' || e.key === 'd') moveRight();
+            if (e.key === 'r' || e.key === 'R') restart();
+        });
+
+        function restart() {
+            enemies = [];
+            score = 0;
+            scoreEl.textContent = '0';
+            playerCol = Math.floor(COLS / 2);
+            isRunning = true;
+            frame = 0;
+            initTiles();
+            gameOverEl.style.display = 'none';
+        }
+
+        restartBtn.addEventListener('click', restart);
+        gameOverEl.addEventListener('click', restart);
+
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
