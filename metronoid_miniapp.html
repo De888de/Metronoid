@@ -19,7 +19,7 @@
             align-items: center;
             justify-content: center;
         }
-        #splash {
+        #splash, #startScreen {
             position: fixed;
             inset: 0;
             background: #000;
@@ -28,29 +28,61 @@
             align-items: center;
             justify-content: center;
             z-index: 100;
-            transition: opacity 0.6s ease;
+            transition: opacity 0.5s ease;
         }
-        #splash.hidden {
+        #splash.hidden, #startScreen.hidden {
             opacity: 0;
             pointer-events: none;
         }
         #splash h1 {
-            font-size: 42px;
-            letter-spacing: 8px;
+            font-size: 48px;
+            letter-spacing: 4px;
             color: #00ff88;
             font-weight: 300;
-            text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88;
+            text-shadow: 0 0 12px #00ff88;
             animation: flicker 2.5s ease-in-out infinite;
         }
-        @keyframes flicker {
-            0%, 100% { opacity: 1; text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88; }
-            50%      { opacity: 0.75; text-shadow: 0 0 6px #00ff88, 0 0 12px #00ff88; }
+        #splash h1 span {
+            font-size: 24px;
+            letter-spacing: 6px;
         }
-        #splash p {
-            margin-top: 50px;
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        #splash p, #startScreen p {
+            margin-top: 40px;
             font-size: 13px;
             color: #555;
+            letter-spacing: 3px;
+        }
+        #startScreen {
+            background: linear-gradient(180deg, #0d1520 0%, #1a2332 100%);
+        }
+        #startScreen h1 {
+            font-size: 36px;
             letter-spacing: 4px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0,255,136,0.5);
+            margin-bottom: 10px;
+        }
+        #startScreen .subtitle {
+            font-size: 14px;
+            color: #888;
+            letter-spacing: 2px;
+            margin-bottom: 40px;
+        }
+        #startBtn {
+            padding: 14px 40px;
+            font-size: 18px;
+            background: #00ff88;
+            color: #000;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0,255,136,0.4);
         }
         #gameCanvas {
             display: block;
@@ -116,10 +148,20 @@
     </style>
 </head>
 <body>
-    <!-- Заставка -->
+    <!-- Заставка лаборатории -->
     <div id="splash">
-        <h1>Δ DELTA</h1>
-        <p>TAP TO START</p>
+        <h1>Δ // <span>DELTA</span> //</h1>
+        <p>TAP TO CONTINUE</p>
+    </div>
+
+    <!-- Стартовая страница -->
+    <div id="startScreen" class="hidden">
+        <h1>Metronoid</h1>
+        <div class="subtitle">Metro Runner</div>
+        <p style="margin-bottom: 30px; color: #aaa; font-size: 15px; text-align: center; max-width: 280px; line-height: 1.4;">
+            Пройди переход метро,<br>не врезавшись в людей
+        </p>
+        <button id="startBtn">НАЧАТЬ</button>
     </div>
 
     <div id="ui">Score: <span id="score">0</span></div>
@@ -143,6 +185,8 @@
         }
 
         const splash = document.getElementById('splash');
+        const startScreen = document.getElementById('startScreen');
+        const startBtn = document.getElementById('startBtn');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('score');
@@ -340,17 +384,26 @@
             gameOverEl.style.display = 'none';
         }
 
-        function startGame() {
+        function showStartScreen() {
             splash.classList.add('hidden');
             setTimeout(() => {
                 splash.style.display = 'none';
-                isRunning = true;
-                if (tg) tg.HapticFeedback.impactOccurred('medium');
-            }, 600);
+                startScreen.classList.remove('hidden');
+            }, 500);
         }
 
-        splash.addEventListener('click', startGame);
-        splash.addEventListener('touchstart', startGame);
+        function startGame() {
+            startScreen.classList.add('hidden');
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+                isRunning = true;
+                if (tg) tg.HapticFeedback.impactOccurred('medium');
+            }, 500);
+        }
+
+        splash.addEventListener('click', showStartScreen);
+        splash.addEventListener('touchstart', showStartScreen);
+        startBtn.addEventListener('click', startGame);
 
         restartBtn.addEventListener('click', restart);
         gameOverEl.addEventListener('click', restart);
