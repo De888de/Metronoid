@@ -19,6 +19,40 @@
             align-items: center;
             justify-content: center;
         }
+        #splash {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.6s ease;
+        }
+        #splash.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #splash img {
+            width: 180px;
+            height: auto;
+            filter: drop-shadow(0 0 20px #00ff88);
+            margin-bottom: 20px;
+        }
+        #splash h1 {
+            font-size: 26px;
+            letter-spacing: 6px;
+            color: #00ff88;
+            text-shadow: 0 0 15px #00ff88;
+            font-weight: 300;
+        }
+        #splash p {
+            margin-top: 30px;
+            font-size: 14px;
+            color: #666;
+            letter-spacing: 2px;
+        }
         #gameCanvas {
             display: block;
             background: linear-gradient(180deg, #1a2332 0%, #0d1520 100%);
@@ -83,6 +117,13 @@
     </style>
 </head>
 <body>
+    <!-- Заставка лаборатории -->
+    <div id="splash">
+        <img src="delta.png" alt="Delta Lab">
+        <h1>Δ DELTA LAB</h1>
+        <p>TAP TO START</p>
+    </div>
+
     <div id="ui">Score: <span id="score">0</span></div>
     <canvas id="gameCanvas"></canvas>
     <div id="gameOver">
@@ -103,6 +144,7 @@
             document.body.style.background = tg.themeParams.bg_color || '#0a0e14';
         }
 
+        const splash = document.getElementById('splash');
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('score');
@@ -117,7 +159,7 @@
         let enemies = [];
         let tiles = [];
         let score = 0;
-        let isRunning = true;
+        let isRunning = false;
         let frame = 0;
         const spawnEvery = 40;
         const speed = 0.08;
@@ -127,7 +169,7 @@
         function initTiles() {
             tiles = [];
             nextRowIndex = -20;
-            const tileScale = 4; // плитки в 4 раза меньше
+            const tileScale = 4;
             for (let i = 0; i < (ROWS + 8) * tileScale; i++) {
                 const rowIndex = nextRowIndex + i;
                 for (let c = 0; c < COLS * tileScale; c++) {
@@ -167,21 +209,17 @@
 
             frame++;
 
-            // Двигаем плитки
             for (let t of tiles) {
                 t.row += floorSpeed / cellSize;
             }
 
-            // Удаляем плитки, которые ушли вниз
             tiles = tiles.filter(t => t.row < ROWS + 6);
 
-            // Находим самый верхний ряд
             let minRow = Infinity;
             for (let t of tiles) {
                 if (t.row < minRow) minRow = t.row;
             }
 
-            // Добавляем новые ряды сверху
             const tileScale = 4;
             while (minRow > -4) {
                 nextRowIndex--;
@@ -224,17 +262,15 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Рисуем мелкие плитки
             const tileScale = 4;
             const smallTile = cellSize / tileScale;
             for (let t of tiles) {
                 const x = t.col * cellSize;
                 const y = t.row * cellSize;
-                ctx.fillStyle = t.dark ? '#f5e6d3' : '#ffffff'; // бежевый и белый
+                ctx.fillStyle = t.dark ? '#f5e6d3' : '#ffffff';
                 ctx.fillRect(x, y, smallTile - 0.5, smallTile - 0.5);
             }
 
-            // Игрок
             const px = playerCol * cellSize + cellSize / 2;
             const py = playerRow * cellSize + cellSize / 2;
             const playerScale = 1 + Math.sin(Date.now() / 150) * 0.06;
@@ -243,7 +279,6 @@
             ctx.textBaseline = 'middle';
             ctx.fillText('🚶', px, py);
 
-            // Люди с анимацией шагов
             const people = ['🧑', '👨', '👩', '🧑‍🦱', '👨‍🦰', '👩‍🦰', '🧑‍🦳', '👴', '👵'];
             for (let e of enemies) {
                 const ex = e.col * cellSize + cellSize / 2;
@@ -306,6 +341,18 @@
             initTiles();
             gameOverEl.style.display = 'none';
         }
+
+        function startGame() {
+            splash.classList.add('hidden');
+            setTimeout(() => {
+                splash.style.display = 'none';
+                isRunning = true;
+                if (tg) tg.HapticFeedback.impactOccurred('medium');
+            }, 600);
+        }
+
+        splash.addEventListener('click', startGame);
+        splash.addEventListener('touchstart', startGame);
 
         restartBtn.addEventListener('click', restart);
         gameOverEl.addEventListener('click', restart);
