@@ -1,0 +1,10 @@
+# Секреты
+.env
+*.env
+token.txt
+secrets.txt
+config.local.js
+
+# Системные файлы
+.DS_Store
+Thumbs.db
